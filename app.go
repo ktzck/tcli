@@ -6,13 +6,12 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
-var quit = make(chan int)
-
 type App struct {
 	currentView View
 	Root        *Container
 	Handler     EventHandler
 	QuitKey     Key
+	QuitChannel chan int
 }
 
 func New() *App {
@@ -20,6 +19,7 @@ func New() *App {
 	app.Root = NewContainer(OrientationColumn)
 	app.currentView = app.Root
 	app.QuitKey = KeyCtrlC
+	app.QuitChannel = make(chan int)
 	return app
 }
 
@@ -54,9 +54,11 @@ func (a *App) Run() error {
 					fmt.Println("ktzck/tcli app quit")
 					if a.Handler != nil {
 						if a.Handler(&EventQuit{}) {
+							a.Close()
 							break eventloop
 						}
 					} else {
+						a.Close()
 						break eventloop
 					}
 				}
@@ -97,14 +99,13 @@ func (a *App) Run() error {
 
 	for {
 		select {
-		case <-quit:
+		case <-a.QuitChannel:
 			termbox.Close()
 			return nil
 		}
 	}
-
 }
 
 func (a *App) Close() {
-	close(quit)
+	a.QuitChannel <- 1
 }

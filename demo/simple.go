@@ -37,7 +37,7 @@ func main() {
 	app.Root.AddView(mainc, 0.8)
 	app.Root.AddView(input, 0.2)
 
-	input.Handler = func(ev tcli.Event) {
+	input.Handler = func(ev tcli.Event) bool {
 		switch ev := ev.(type) {
 		case *tcli.EventKey:
 			switch ev.Key {
@@ -53,10 +53,10 @@ func main() {
 					display.SetText("Not Found")
 				}
 				input.SetText("")
+				return true
 			}
-		case *tcli.EventMouse:
-
 		}
+		return true
 	}
 
 	app.Run()
