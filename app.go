@@ -1,8 +1,6 @@
 package tcli
 
 import (
-	"fmt"
-
 	"github.com/nsf/termbox-go"
 )
 
@@ -42,7 +40,6 @@ func (a *App) Run() error {
 	a.Root.Resize(termbox.Size())
 
 	go func() {
-	eventloop:
 		for {
 			a.Draw()
 			switch ev := termbox.PollEvent(); ev.Type {
@@ -51,16 +48,7 @@ func (a *App) Run() error {
 				tev.Key = Key(ev.Key)
 				tev.Ch = ev.Ch
 				if tev.Key == a.QuitKey {
-					fmt.Println("ktzck/tcli app quit")
-					if a.Handler != nil {
-						if a.Handler(&EventQuit{}) {
-							a.Close()
-							break eventloop
-						}
-					} else {
-						a.Close()
-						break eventloop
-					}
+					a.Close()
 				}
 				if a.Handler != nil {
 					if a.Handler(tev) {
@@ -71,10 +59,8 @@ func (a *App) Run() error {
 				}
 			case termbox.EventResize:
 				tev := &EventResize{}
-				w, h := termbox.Size()
-				tev.Width = w
-				tev.Height = h
-				a.Root.Resize(w, h)
+				tev.Width, tev.Height = termbox.Size()
+				a.Root.Resize(tev.Width, tev.Height)
 				a.Root.Draw()
 				if a.Handler != nil {
 					if a.Handler(tev) {
@@ -93,19 +79,26 @@ func (a *App) Run() error {
 				} else {
 					a.currentView.Handle(tev)
 				}
+			case termbox.EventInterrupt:
+				tev := &EventQuit{}
+				if a.Handler != nil {
+					if a.Handler(tev) {
+						close(a.QuitChannel)
+					}
+				} else {
+					close(a.QuitChannel)
+				}
 			}
 		}
 	}()
 
-	for {
-		select {
-		case <-a.QuitChannel:
-			termbox.Close()
-			return nil
-		}
+	select {
+	case <-a.QuitChannel:
+		termbox.Close()
+		return nil
 	}
 }
 
 func (a *App) Close() {
-	a.QuitChannel <- 1
+	termbox.Interrupt()
 }
