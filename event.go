@@ -39,12 +39,17 @@ func (ev *EventResize) Type() string {
 }
 
 // EventError -
-type EventError struct {
-	Event
-}
+type EventError struct{ Event }
 
 func (ev *EventError) Type() string {
 	return "error"
+}
+
+// EventQuit -
+type EventQuit struct{ Event }
+
+func (ev *EventQuit) Type() string {
+	return "quit"
 }
 
 // EventNone -
@@ -56,4 +61,4 @@ func (ev *EventNone) Type() string {
 	return "none"
 }
 
-type EventHandler func(ev Event)
+type EventHandler func(ev Event) bool

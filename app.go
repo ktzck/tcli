@@ -1,6 +1,8 @@
 package tcli
 
 import (
+	"fmt"
+
 	"github.com/nsf/termbox-go"
 )
 
@@ -47,13 +49,23 @@ func (a *App) Run() error {
 			case termbox.EventKey:
 				tev := &EventKey{}
 				tev.Key = Key(ev.Key)
-				if tev.Key == a.QuitKey {
-					break eventloop
-				}
 				tev.Ch = ev.Ch
-				a.currentView.Handle(tev)
+				if tev.Key == a.QuitKey {
+					fmt.Println("ktzck/tcli app quit")
+					if a.Handler != nil {
+						if a.Handler(&EventQuit{}) {
+							break eventloop
+						}
+					} else {
+						break eventloop
+					}
+				}
 				if a.Handler != nil {
-					a.Handler(tev)
+					if a.Handler(tev) {
+						a.currentView.Handle(tev)
+					}
+				} else {
+					a.currentView.Handle(tev)
 				}
 			case termbox.EventResize:
 				tev := &EventResize{}
@@ -63,17 +75,24 @@ func (a *App) Run() error {
 				a.Root.Resize(w, h)
 				a.Root.Draw()
 				if a.Handler != nil {
-					a.Handler(tev)
+					if a.Handler(tev) {
+						a.currentView.Handle(tev)
+					}
+				} else {
+					a.currentView.Handle(tev)
 				}
 			case termbox.EventMouse:
 				tev := &EventMouse{}
 				tev.Key = Key(ev.Key)
 				if a.Handler != nil {
-					a.Handler(tev)
+					if a.Handler(tev) {
+						a.currentView.Handle(tev)
+					}
+				} else {
+					a.currentView.Handle(tev)
 				}
 			}
 		}
-		quit <- 1
 	}()
 
 	for {
@@ -83,6 +102,7 @@ func (a *App) Run() error {
 			return nil
 		}
 	}
+
 }
 
 func (a *App) Close() {
